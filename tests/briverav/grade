@@ -1,0 +1,54 @@
+========================
+|| Grade Book for pa4 ||
+========================
+briverav
+
+Total number of files submitted: 8
+1:compilation.messages
+2:grade
+3:input.data1
+4:input.data2
+5:Makefile
+6:output.data1
+7:output.data2
+8:Roots.java
+
+Extra files present (-3 pts)
+
+============================================
+           Performance Evaluation 
+============================================
+---------- compilation ----------
+make
+---------------------------------
+You have 0 error(s)
+You have 0 warning(s)
+
+----------- java run ----------
+>> input.data1 <<
+java Roots 
+1:Enter the degree: Enter 8 coefficients: Enter the left and right endpoints: Root found at -0.93511
+2:Root found at 0.10049
+3:Root found at 0.96070
+
+>> input.data2 <<
+java Roots 
+1:Enter the degree: Enter 3 coefficients: Enter the left and right endpoints: 
+-------------------------------
+
+Does not print if no root is found using [input.data2] (-5 pts)
+
+
+==============================================
+           Specification Evaluation 
+==============================================
+
+
+
+Code does not contain comments (-1 pt)
+i.e. this does not include the comment header at the top
+
+###################
+# GRADE = 91/100 #
+###################
+

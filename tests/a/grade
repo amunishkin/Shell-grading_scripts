@@ -1,0 +1,61 @@
+========================
+|| Grade Book for pa4 ||
+========================
+a
+
+Total number of files submitted: 8
+1:compilation.messages
+2:grade
+3:input.data1
+4:input.data2
+5:output.data1
+6:output.data2
+7:Roots.class
+8:Roots.java
+
+Extra files present (-3 pts)
+
+============================================
+           Performance Evaluation 
+============================================
+---------- compilation ----------
+javac Roots.java
+---------------------------------
+You have 0 error(s)
+You have 0 warning(s)
+
+----------- java run ----------
+>> input.data1 <<
+java Roots 
+1:0.10049
+
+>> input.data2 <<
+java Roots 
+1:0.10049
+-------------------------------
+
+Does not print if no root is found using [input.data2] (-5 pts)
+
+No Makefile (-10 pts)
+
+==============================================
+           Specification Evaluation 
+==============================================
+
+Standard comment block in Roots.java does not contain [Roots.java] (-3 pts)
+Standard comment block in Roots.java does not contain [assignment#] (-3 pts)
+
+Roots are not accurate enough upto 5 decimal places or incorrect (-5 pts)
+First root is not [-0.93511]
+Thrid root is not [0.96070]
+
+Code does not contain comments (-1 pt)
+i.e. this does not include the comment header at the top
+No function [static double poly(double[] C, double x)] (-4 pts)
+No function [static double[] diff(double[] C)] (-4 pts)
+No function [static double findRoot(double[] C, double a, double b, double tolerance)] (-4 pts)
+
+###################
+# GRADE = 58/100 #
+###################
+

@@ -1,0 +1,215 @@
+#! /bin/bash
+# test - grades pa4 performance and specification 
+#        using the specified user directories
+#
+
+EXITCODE=0
+
+#
+# checks args and print usage message if args not supplied
+#
+if [ $# -lt 1 ]
+then
+	echo "Usage: $(basename $0) DIRECTORY ..." >&2
+	exit 1
+fi
+
+SOURCES="README 
+Simulation.java 
+QueueInterface.java
+QueueEmptyException.java
+Queue.java 
+QueueTest.java
+Job.java
+makefile "
+
+DIR=/afs/cats.ucsc.edu/class/cmps012b-pt.u14/pa4
+#DIR=~/private/cs12b/pa4
+MAIN=Simulation
+MAINSOURCE=Simulation.java
+MAINCLASS=Simulation.class
+ADT=Queue
+ADTSOURCE=Queue.java
+ADTCLASS=Queue.class
+ADTTEST=QTest
+ADTTESTSOURCE=QTest.java
+INNERCLASS='Queue$Node.class'
+INPUT="ex1 ex2"
+REPORT=grade
+AVEGRADE=0
+TOTALGRADE=0
+COUNT=0
+
+#
+# iterates through directory list and checks if directory exist
+#
+for i
+do
+	if [ -d "${DIR}/$i" ]
+	then
+		TOTAL=0
+                GRADE=100
+#
+# copies files
+#
+		for FILE in $(ls ${DIR}/$i) 
+		do
+			if [ -f "${DIR}/${i}/$FILE" ]
+			then
+				((TOTAL++))
+                                cp ${DIR}/${i}/$FILE ./$FILE 	
+			fi
+		done
+        echo "Directory name $i:
+**********************************
+Total files submitted: $TOTAL" > $REPORT
+
+#
+# checks files
+#
+        	for f in $SOURCES
+                do 
+			if [ -e $f -a -s $f ]
+			then
+        			echo "$f submitted -0 points" >> $REPORT
+			else
+				echo "$f absent -2 points" >> $REPORT
+                        	((GRADE = GRADE - 2))
+			fi
+		done
+                echo "
+**********************************
+Specification (Queue ADT Implementation):" >> $REPORT
+
+#
+# checks ADT
+#         
+                if [ -e $ADTSOURCE -a -s $ADTSOURCE ]
+                then
+			javac $ADTSOURCE >& tmp
+                        if [ -e $ADTCLASS -a -e $INNERCLASS ]
+                        then
+				cp ../$ADTTESTSOURCE .
+                		javac $ADTTESTSOURCE >& tmp
+                		java $ADTTEST >& out &
+				PID=$!
+				sleep 3
+				kill -KILL $PID >& tmp
+                                diff -wB ../out out >& tmp
+                                if [ $(wc -l < tmp) -eq 0 ]
+                                then
+					echo "$ADT works -0 points" >> $REPORT
+				else
+					echo "$ADT partially works -$(wc -l < tmp) points" >> $REPORT
+					((GRADE = GRADE - $(wc -l < tmp) ))
+                               	fi
+ 				rm *.class
+				rm $ADTTESTSOURCE	
+                        else
+                             	echo "$ADT does not work -50 points" >> $REPORT
+                                ((GRADE = GRADE - 50))
+                        fi
+                else
+ 			echo "$ADT implementation absent -50 points" >> $REPORT
+ 			((GRADE = GRADE - 50))
+      		fi
+                
+		echo "
+**********************************
+Performance :" >> $REPORT
+
+#
+# checks main application
+#
+		if [ -e $MAINSOURCE ]
+		then
+#
+# checks makefile
+#
+			if [ -e makefile -o -e Makefile ]
+			then
+				make >& tmp
+                 		if [ -e $MAIN -a -e $MAINCLASS ]
+                		then 
+					echo "make works -0 points" >> $REPORT
+                        	else
+					echo "make does not work -20 points" >> $REPORT
+					((GRADE = GRADE - 20))
+					cp ../makefile .
+					make >& tmp
+				fi
+			else
+				cp ../makefile .
+				make >& tmp
+				echo "Jar file cannot be made -20 points" >> $REPORT
+				((GRADE = GRADE - 20))
+			fi
+#
+# checks output
+#	
+			for e in $INPUT
+			do
+                		cp ../$e .
+                		$MAIN $e >& tmp &
+				PID=$!
+				sleep 5
+				kill -KILL $PID 2> /dev/null
+				echo >> $REPORT
+				echo "for input file $e:" >> $REPORT
+                		if [ -e tmp -a $(wc -l < tmp) -eq 0 ]
+                		then
+                   			echo "$MAIN runs -0 points" >> $REPORT
+                		else
+                   			echo "$MAIN does not run correctly -3 points" >> $REPORT
+					((GRADE = GRADE - 3))
+                		fi
+
+                		diff -wB ../$e.rpt $e.rpt >& tmp
+                		if [ -e $e.rpt -a $(wc -l < tmp) -eq 0 ]
+                		then
+                   			echo "report file correct -0 points" >> $REPORT
+                		else
+                   			echo "report file different -2 points" >> $REPORT
+					((GRADE = GRADE - 2))
+                		fi
+
+                		diff -wB ../$e.trc $e.trc >& tmp
+                		if [ -e $e.trc -a $(wc -l < tmp) -eq 0 ]
+                		then 
+                   			echo "trace file correct -0 points" >> $REPORT
+                		else
+                   			echo "trace file different -2 points" >> $REPORT
+					((GRADE = GRADE - 2))
+                		fi 
+			done
+		else
+			echo "$MAIN not implemented -34 points" >> $REPORT
+			((GRADE = GRADE - 34))
+		fi
+#
+# prints grade
+# 
+                echo "
+**********************************
+Your grade is $GRADE out of 100 
+
+		
+" >> $REPORT
+		((TOTALGRADE = TOTALGRADE + $GRADE))
+		((COUNT ++))
+
+#
+# copies report and cleans directory
+#
+		cat $REPORT
+
+	else
+#
+# prints error message if directory does not exist
+#
+		echo "$i: directory does not exist" >&2
+		echo
+		EXITCODE=2
+	fi
+done
+exit $EXITCODE

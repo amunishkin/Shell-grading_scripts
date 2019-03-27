@@ -1,0 +1,227 @@
+#! /bin/bash
+# testpa5 - grades pa5 performance and specification 
+#
+
+EXITCODE=0
+SOURCES="README 
+Dictionary.c 
+Dictionary.h
+DictionaryTest.c
+DictionaryClient.c
+makefile "
+
+DIR=/afs/cats.ucsc.edu/class/cmps012b-pt.u14/pa5
+#DIR=~/private/cs12b/pa5
+MAIN=DictionaryClient
+MAINCLASS=DictionaryClient.o
+MAINSOURCE=DictionaryClient.c
+ADT=Dictionary
+ADTSOURCE=Dictionary.c
+ADTCLASS=Dictionary.o
+ADTTEST=HashTest
+ADTTESTSOURCE=HashTest.c
+POINTS=0
+OUTPUT=DictionaryClient-out
+ADTOUT=DictionaryClient2-out
+REPORT=grade
+AVEGRADE=0
+TOTALGRADE=0
+COUNT=0
+CSV=report.csv
+
+#
+# iterates through directory list and checks if directory exist
+#
+for i in $(ls $DIR)
+do
+	if [ -d "${DIR}/${i}" ]
+	then
+		TOTAL=0
+                GRADE=100
+#
+# copies files
+#
+		for FILE in $(ls ${DIR}/${i}) 
+		do
+			if [ -f "${DIR}/${i}/$FILE" ]
+			then
+				((TOTAL++))
+                                cp ${DIR}/${i}/$FILE ./$FILE 	
+			fi
+		done
+        echo "Directory name $i:
+**********************************
+Total files submitted: $TOTAL" > $REPORT
+
+#
+# checks files
+#
+        	for f in $SOURCES
+                do 
+			if [ -e $f -a -s $f ]
+			then
+        			echo "$f submitted -0 points" >> $REPORT
+			else
+				echo "$f absent -2 points" >> $REPORT
+                        	((GRADE = GRADE - 2))
+			fi
+		done
+                echo "
+**********************************
+Specification (Dictionary ADT Implementation):" >> $REPORT
+
+#
+# backup the original copy of makefile
+# 
+		if [ -e makefile ]
+                then
+			cp makefile makefile-original
+		fi
+#
+# checks ADT
+#         
+                if [ -e $ADTSOURCE -a -s $ADTSOURCE ]
+                then
+			cp ../makefile2 makefile
+			cp ../DictionaryClient2.c . >& tmp
+			cp ../Dictionary.h . >& tmp
+                        cp ../$ADTTESTSOURCE . >& tmp
+			make >& tmp
+                        if [ -e $ADTTEST -a -e $ADTCLASS ]
+                        then
+                		$ADTTEST >& out &
+				PID=$!
+				sleep 3
+				kill -KILL $PID >& tmp
+				if [ ! -e $ADTOUT ]
+				then
+					touch $ADTOUT
+				fi
+                                diff -wB ../$ADTOUT $ADTOUT >& tmp
+                                if [ $(wc -l < tmp) -eq 0 ]
+                                then
+					echo "$ADT works -0 points" >> $REPORT
+				else
+                                        ((POINTS = $(wc -l < tmp)/4 + 1))
+					echo "$ADT partially works -$POINTS points" >> $REPORT
+					((GRADE = GRADE - $POINTS))
+                               	fi
+ 				make clean >& tmp	
+                                rm makefile
+                        else
+                             	echo "$ADT does not work -50 points" >> $REPORT
+                                ((GRADE = GRADE - 50))
+                        fi
+                else
+ 			echo "$ADT implementation absent -50 points" >> $REPORT
+ 			((GRADE = GRADE - 50))
+      		fi
+#
+# restores makefile
+#
+		if [ -e makefile-original ]
+		then
+			cp makefile-original makefile
+                fi
+
+		echo "
+**********************************
+Performance:" >> $REPORT
+
+#
+# checks main application
+#
+		if [ -e $ADTSOURCE -a -s $ADTSOURCE ]
+		then
+#
+# checks makefile
+#
+			if [ -e makefile -o -e Makefile ]
+			then
+				rm $MAINCLASS >& tmp
+				rm $MAIN>& tmp
+				make >& tmp
+                 		if [ -e $MAIN -a -e $MAINCLASS ]
+                		then 
+					echo "makefile works -0 points" >> $REPORT
+                        	else
+					echo "makefile does not work -10 points" >> $REPORT
+					((GRADE = GRADE - 10))
+				fi
+			else
+				echo "makefile cannot be tested -10 points" >> $REPORT
+				((GRADE = GRADE - 10))
+			fi
+			cp ../makefile makefile
+			cp ../$MAINSOURCE .
+			make clean >& tmp
+			make >& tmp
+#
+# checks output
+#	
+                	$MAIN >& $OUTPUT &
+			PID=$!
+			sleep 5
+			kill -KILL $PID 2> /dev/null
+			echo "$i"
+			if [ ! -e $OUTPUT ]
+			then
+				touch $OUTPUT
+			fi
+               		diff -wB ../$OUTPUT $OUTPUT >& tmp
+			((POINTS = $(wc -l < tmp) / 2 + 2 ))
+               		if [ $(wc -l < tmp) -eq 0 ]
+               		then
+             			echo "output is correct -0 points" >> $REPORT
+               		else
+               			echo "output is  different -$POINTS points" >> $REPORT				
+				((GRADE = GRADE - $POINTS))
+                	fi
+#
+# checks memory leakage
+#
+			make check >& tmp
+			POINTS=$(cat tmp | grep -o -P '(?<=ERROR SUMMARY: ).*(?=errors from)') >& temp
+			if [ $POINTS -eq 0 ]
+			then
+				echo "no memory leakage -0 points" >> $REPORT
+			else
+				echo "there is some memory leakage -5 points" >> $REPORT
+				((GRADE = GRADE - 5))
+			fi
+
+		else
+			echo "$ADT test fails -38 points" >> $REPORT
+			((GRADE = GRADE - 38))
+		fi
+#
+# prints grade
+# 
+                echo "
+**********************************
+Your grade is $GRADE out of 100 
+
+		
+" >> $REPORT
+		echo "$i, $GRADE" >> $CSV
+		((TOTALGRADE = TOTALGRADE + $GRADE))
+		((COUNT ++))
+
+#
+# copies report and cleans directory
+#
+		cat $REPORT >> ../grades2
+		cp $REPORT ${DIR}/${i}
+		cat $CSV >> ../report2.csv
+		rm *
+
+	else
+#
+# prints error message if directory does not exist
+#
+		echo "$i: directory does not exist" >&2
+		echo
+		EXITCODE=2
+	fi
+done
+exit $EXITCODE
